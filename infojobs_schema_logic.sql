@@ -27,6 +27,27 @@ FOR EACH ROW
 EXECUTE FUNCTION encrypt_password_before_insert();
 
 /*
+ * CREACIÓN DEL TRIGGER EN LA TABLA "public".users
+ * Este trigger garantiza que la columna "registration_date" siempre registre el momento exacto
+ * de la creación del usuario. De esta manera, no es necesario depender de una restricción CHECK.
+ */
+
+CREATE OR REPLACE FUNCTION enforce_registration_date()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        NEW.registration_date := current_timestamp;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_enforce_registration_date
+BEFORE INSERT ON "public".users
+FOR EACH ROW
+EXECUTE FUNCTION enforce_registration_date();
+
+/*
  * CREACIÓN DEL PROCEDIMIENTO PARA REGISTRAR CANDIDATOS
  * Este procedimiento permite registrar un nuevo candidato en el sistema. Realiza las siguientes acciones:
  * 1. Inserta un nuevo registro en la tabla "users" con los datos proporcionados (correo electrónico, contraseña, nombre, apellidos, etc.).
@@ -213,15 +234,6 @@ END;
 $$ LANGUAGE plpgsql;
 
 SELECT * FROM get_vacancy_application_stats(1);
-
-SELECT
-    v.id_vacancy,
-    v.job_title,
-    stats.*
-FROM vacancies v
-LEFT JOIN LATERAL get_vacancy_application_stats(v.id_vacancy) stats ON true
-WHERE v.id_company = 456;
-
 
 /*
  * CREACIÓN DE LA FUNCIÓN PARA BUSCAR VACANTES POR PREFERENCIAS DEL CANDIDATO
@@ -506,8 +518,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-SELECT create_vacancy(49, 'Desarrollador Backend', 'Buscamos un desarrollador backend con experiencia en Python.', 3, 3.0, 2, 1, 2, 1, 1, 25000, 35000);
-
 /*
  * CREACIÓN DEL TRIGGER PARA PREVENIR POSTULACIONES A VACANTES CERRADAS
  * Este trigger asegura que no se pueda postular a vacantes que estén cerradas.
@@ -568,10 +578,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-SELECT update_application_status(
-    32, 49,'Accepted'
-);
-
 /*
  * CREACIÓN DE LA FUNCIÓN PARA ESTABLECER PREFERENCIAS DE CANDIDATO
  * Esta función permite a un candidato establecer sus preferencias en diferentes aspectos de una vacante.
@@ -626,16 +632,6 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE plpgsql;
-
-SELECT set_candidate_preferences(
-    48::INTEGER,
-    35000::MONEY,
-    ARRAY[1, 2]::INTEGER[],
-    ARRAY[1]::INTEGER[],
-    ARRAY[1, 2]::INTEGER[],
-    ARRAY[1]::INTEGER[],
-    ARRAY[1, 2]::INTEGER[]
-);
 
 /*********************************DEFINICIÓN DE VISTAS*********************************/
 

@@ -27,8 +27,7 @@ CREATE TABLE "public".users
  account_status    account_status NOT NULL,
  id_user_type      serial NOT NULL,
  CONSTRAINT PK_3 PRIMARY KEY ( id_user ),
- CONSTRAINT FK_1 FOREIGN KEY ( id_user_type ) REFERENCES "public".users_types ( id_user_type ),
- CONSTRAINT chk_registration_date CHECK (registration_date = current_timestamp)
+ CONSTRAINT FK_1 FOREIGN KEY ( id_user_type ) REFERENCES "public".users_types ( id_user_type )
 );
 
 CREATE INDEX FK_1 ON "public".users
